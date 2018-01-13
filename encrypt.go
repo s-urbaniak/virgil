@@ -16,7 +16,7 @@ func encryptCmd(cfg *config) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "encrypt",
-		Short: "encrypt data from stdin using a virgil",
+		Short: "encrypt data from stdin using a virgil card",
 		Run: func(cmd *cobra.Command, args []string) {
 			a := newApp(cfg)
 

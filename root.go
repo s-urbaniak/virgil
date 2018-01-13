@@ -55,6 +55,7 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(keyCmd(&cfg))
 	root.AddCommand(cardCmd(&cfg))
 	root.AddCommand(encryptCmd(&cfg))
+	root.AddCommand(decryptCmd(&cfg))
 
 	return root
 }
