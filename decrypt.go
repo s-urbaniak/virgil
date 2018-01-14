@@ -11,12 +11,12 @@ import (
 	"gopkg.in/virgil.v4/virgilapi"
 )
 
-type decryptConfig struct {
+type cryptConfig struct {
 	identity, password string
 }
 
 func decryptCmd(cfg *config) *cobra.Command {
-	var dc decryptConfig
+	var dc cryptConfig
 
 	cmd := &cobra.Command{
 		Use:   "decrypt",

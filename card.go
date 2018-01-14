@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"text/tabwriter"
 
@@ -9,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	v "gopkg.in/virgil.v4"
+	"gopkg.in/virgil.v4/virgilapi"
 )
 
 func cardCmd(c *config) *cobra.Command {
@@ -25,6 +29,7 @@ func cardCmd(c *config) *cobra.Command {
 	cmd.AddCommand(cardCreateCmd(c))
 	cmd.AddCommand(cardRevokeCmd(c))
 	cmd.AddCommand(cardExportCmd(c))
+	cmd.AddCommand(cardEncryptCmd(c))
 
 	return cmd
 }
@@ -166,6 +171,42 @@ func cardExportCmd(cfg *config) *cobra.Command {
 			}
 
 			fmt.Fprintln(os.Stdout, cs)
+		},
+	}
+
+	cmd.Flags().StringVar(&id, "id", "", "the id of the card")
+	_ = cmd.MarkFlagRequired("id")
+
+	return cmd
+}
+
+func cardEncryptCmd(cfg *config) *cobra.Command {
+	var id string
+
+	cmd := &cobra.Command{
+		Use:   "encrypt",
+		Short: "encrypt data from stdin using a virgil card",
+		Run: func(cmd *cobra.Command, args []string) {
+			a := newApp(cfg)
+
+			card, err := a.api.Cards.Get(id)
+			if err != nil {
+				a.exit(errors.Wrap(err, "error finding card"))
+			}
+
+			buf, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				a.exit(errors.Wrap(err, "error reading input data"))
+			}
+
+			enc, err := card.Encrypt(virgilapi.Buffer(buf))
+			if err != nil {
+				a.exit(errors.Wrap(err, "error encrypting data"))
+			}
+
+			if _, err := io.Copy(os.Stdout, bytes.NewBuffer(enc)); err != nil {
+				a.exit(errors.Wrap(err, "error writing encrypted data"))
+			}
 		},
 	}
 
