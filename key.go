@@ -70,7 +70,7 @@ func keyCreateCmd(cfg *config) *cobra.Command {
 }
 
 func keyEncryptCmd(cfg *config) *cobra.Command {
-	var identity string
+	var identities []string
 
 	cmd := &cobra.Command{
 		Use:   "encrypt",
@@ -78,14 +78,19 @@ func keyEncryptCmd(cfg *config) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			a := newApp(cfg)
 
-			pubbuf, err := ioutil.ReadFile(identity + ".pub")
-			if err != nil {
-				a.exit(errors.Wrap(err, "error loading public key"))
-			}
+			pubkeys := make([]virgilcrypto.PublicKey, len(identities))
+			for i, _ := range identities {
+				pubbuf, err := ioutil.ReadFile(identities[i] + ".pub")
+				if err != nil {
+					a.exit(errors.Wrap(err, "error loading public key"))
+				}
 
-			pubkey, err := virgilcrypto.DecodePublicKey(pubbuf)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error decoding public key"))
+				pubkey, err := virgilcrypto.DecodePublicKey(pubbuf)
+				if err != nil {
+					a.exit(errors.Wrap(err, "error decoding public key"))
+				}
+
+				pubkeys[i] = pubkey
 			}
 
 			data, err := ioutil.ReadAll(os.Stdin)
@@ -93,7 +98,7 @@ func keyEncryptCmd(cfg *config) *cobra.Command {
 				a.exit(errors.Wrap(err, "error loading data"))
 			}
 
-			enc, err := virgil.Crypto().Encrypt(data, pubkey)
+			enc, err := virgil.Crypto().Encrypt(data, pubkeys...)
 			if err != nil {
 				a.exit(errors.Wrap(err, "error loading data"))
 			}
@@ -102,7 +107,7 @@ func keyEncryptCmd(cfg *config) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&identity, "identity", "", "your identity")
+	cmd.Flags().StringArrayVar(&identities, "identity", nil, "the identity")
 
 	markRequired(cmd.Flags(), "identity")
 
