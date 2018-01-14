@@ -1,13 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	v "gopkg.in/virgil.v4"
 )
 
 type keyConfig struct {
@@ -32,7 +29,6 @@ func keyCmd(cfg *config) *cobra.Command {
 	markRequired(cmd.PersistentFlags(), "identity", "password")
 
 	cmd.AddCommand(keyCreateCmd(cfg, &kc))
-	cmd.AddCommand(keyRevokeCmd(cfg, &kc))
 
 	return cmd
 }
@@ -40,7 +36,7 @@ func keyCmd(cfg *config) *cobra.Command {
 func keyCreateCmd(cfg *config, c *keyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "create a public/private key pair and a virgil card",
+		Short: "create a public/private key pair",
 		Run: func(cmd *cobra.Command, args []string) {
 			a := newApp(cfg)
 
@@ -49,57 +45,8 @@ func keyCreateCmd(cfg *config, c *keyConfig) *cobra.Command {
 				a.exit(errors.Wrap(err, "error creating key"))
 			}
 
-			card, err := a.api.Cards.Create(c.identity, key, nil)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error creating card"))
-			}
-
-			card, err = a.api.Cards.Publish(card)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error publishing card"))
-			}
-
-			fmt.Fprintln(os.Stdout, "created card ID", card.ID, "using identity", c.identity)
-
 			if err := key.Save(c.identity, c.password); err != nil {
 				a.exit(errors.Wrap(err, "error saving key"))
-			}
-		},
-	}
-
-	return cmd
-}
-
-func keyRevokeCmd(cfg *config, c *keyConfig) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "revoke",
-		Short: "revoke a virgil card",
-		Run: func(cmd *cobra.Command, args []string) {
-			a := newApp(cfg)
-
-			_, err := a.api.Keys.Load(c.identity, c.password)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error loading key"))
-			}
-
-			cs, err := a.api.Cards.Find(c.identity)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error finding card"))
-			}
-
-			if len(cs) == 0 {
-				a.exit(errors.New("no cards found"))
-			}
-
-			var errs error
-			for i := range cs {
-				if err := a.api.Cards.Revoke(cs[i], v.RevocationReason.Unspecified); err != nil {
-					multierror.Append(errs, err)
-				}
-			}
-
-			if errs != nil {
-				a.exit(errors.Wrap(errs, "error revoking card"))
 			}
 		},
 	}
