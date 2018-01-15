@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/virgil.v4/virgilapi"
+	"gopkg.in/virgil.v5/virgilapi"
 )
 
 type config struct {

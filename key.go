@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	virgil "gopkg.in/virgil.v4"
-	"gopkg.in/virgil.v4/virgilcrypto"
+	virgil "gopkg.in/virgil.v5"
+	"gopkg.in/virgil.v5/virgilcrypto"
 )
 
 type keyConfig struct {

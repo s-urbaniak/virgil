@@ -10,8 +10,8 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	v "gopkg.in/virgil.v4"
-	"gopkg.in/virgil.v4/virgilapi"
+	v "gopkg.in/virgil.v5"
+	"gopkg.in/virgil.v5/virgilapi"
 )
 
 func cardCmd(c *config) *cobra.Command {
