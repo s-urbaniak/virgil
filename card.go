@@ -152,17 +152,52 @@ func cardFindCmd(cfg *config) *cobra.Command {
 }
 
 func cardExportCmd(cfg *config) *cobra.Command {
-	var id string
+	var (
+		id, identity string
+		publicKey    bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "export a virgil card",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			a := newApp(cfg)
 
-			card, err := a.api.Cards.Get(id)
+			var (
+				card *virgilapi.Card
+				err  error
+			)
+
+			switch {
+			case id != "":
+				card, err = a.api.Cards.Get(id)
+			case identity != "":
+				var cs virgilapi.Cards
+				cs, err = a.api.Cards.Find(identity)
+				if len(cs) > 0 {
+					card = cs[0]
+				}
+			default:
+				return errors.New("one of the required flags \"id\" or \"identity\" not set")
+			}
+
 			if err != nil {
 				a.exit(errors.Wrap(err, "error finding card"))
+			}
+
+			if publicKey {
+				pub := card.PublicKey
+				buf, err := v.Crypto().ExportPublicKey(pub)
+
+				if err != nil {
+					a.exit(errors.Wrap(err, "error export public key"))
+				}
+
+				if _, err := io.Copy(os.Stdout, bytes.NewBuffer(buf)); err != nil {
+					a.exit(errors.Wrap(err, "error writing exported public key"))
+				}
+
+				return nil
 			}
 
 			cs, err := card.Export()
@@ -171,11 +206,14 @@ func cardExportCmd(cfg *config) *cobra.Command {
 			}
 
 			fmt.Fprintln(os.Stdout, cs)
+
+			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&id, "id", "", "the id of the card")
-	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&identity, "identity", "", "the identity of the card")
+	cmd.Flags().BoolVar(&publicKey, "public-key", false, "export the public key")
 
 	return cmd
 }

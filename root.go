@@ -42,15 +42,14 @@ func rootCmd() *cobra.Command {
 	root.PersistentFlags().StringVar(&cfg.privateKeyPassword, "virgil-private-key-password", "", "password of the virgil private key")
 	root.PersistentFlags().BoolVar(&cfg.verbose, "verbose", false, "verbose output of messages")
 
-	requiredFlags := []string{
+	rootFlags := []string{
 		"virgil-access-token",
 		"virgil-app-id",
 		"virgil-private-key-file",
 		"virgil-private-key-password",
 	}
 
-	markRequired(root.PersistentFlags(), requiredFlags...)
-	readFromEnv(root.PersistentFlags(), requiredFlags...)
+	readFromEnv(root.PersistentFlags(), rootFlags...)
 
 	root.AddCommand(keyCmd(&cfg))
 	root.AddCommand(cardCmd(&cfg))
@@ -60,23 +59,39 @@ func rootCmd() *cobra.Command {
 }
 
 func newApp(c *config) *app {
-	a := &app{
-		exit: newExitFunc(c),
-	}
+	var (
+		api *virgilapi.Api
+		err error
 
-	privateKey, err := ioutil.ReadFile(c.privateKeyFile)
-	if err != nil {
-		a.exit(errors.Wrap(err, "error opening private key file"))
-	}
+		a = &app{
+			exit: newExitFunc(c),
+		}
+	)
 
-	api, err := virgilapi.NewWithConfig(virgilapi.Config{
-		Token: c.accessToken,
-		Credentials: &virgilapi.AppCredentials{
-			AppId:              c.appID,
-			PrivateKey:         privateKey,
-			PrivateKeyPassword: c.privateKeyPassword,
-		},
-	})
+	switch {
+	case c.accessToken != "" && c.appID != "" && c.privateKeyFile != "" && c.privateKeyPassword != "":
+		privateKey, err := ioutil.ReadFile(c.privateKeyFile)
+		if err != nil {
+			a.exit(errors.Wrap(err, "error opening private key file"))
+		}
+
+		api, err = virgilapi.NewWithConfig(virgilapi.Config{
+			Token: c.accessToken,
+			Credentials: &virgilapi.AppCredentials{
+				AppId:              c.appID,
+				PrivateKey:         privateKey,
+				PrivateKeyPassword: c.privateKeyPassword,
+			},
+		})
+
+	case c.accessToken != "":
+		api, err = virgilapi.NewWithConfig(virgilapi.Config{
+			Token: c.accessToken,
+		})
+
+	default:
+		api, err = virgilapi.New("")
+	}
 
 	if err != nil {
 		a.exit(errors.Wrap(err, "virgil api initialization failed"))
