@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"text/tabwriter"
 
@@ -232,18 +231,8 @@ func cardEncryptCmd(cfg *config) *cobra.Command {
 				a.exit(errors.Wrap(err, "error finding card"))
 			}
 
-			buf, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error reading input data"))
-			}
-
-			enc, err := card.Encrypt(virgilapi.Buffer(buf))
-			if err != nil {
+			if err := v.Crypto().EncryptStream(os.Stdin, os.Stdout, card.PublicKey); err != nil {
 				a.exit(errors.Wrap(err, "error encrypting data"))
-			}
-
-			if _, err := io.Copy(os.Stdout, bytes.NewBuffer(enc)); err != nil {
-				a.exit(errors.Wrap(err, "error writing encrypted data"))
 			}
 		},
 	}

@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/virgil.v4/virgilapi"
 )
 
 type cryptConfig struct {
@@ -29,18 +25,8 @@ func decryptCmd(cfg *config) *cobra.Command {
 				a.exit(errors.Wrap(err, "error loading key"))
 			}
 
-			buf, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error reading input data"))
-			}
-
-			dec, err := key.Decrypt(virgilapi.Buffer(buf))
-			if err != nil {
-				a.exit(errors.Wrap(err, "error decrypting data"))
-			}
-
-			if _, err := io.Copy(os.Stdout, bytes.NewBuffer(dec)); err != nil {
-				a.exit(errors.Wrap(err, "error writing decrypted data"))
+			if err := key.DecryptStream(os.Stdin, os.Stdout); err != nil {
+				a.exit(errors.Wrap(err, "errot decrypting data"))
 			}
 		},
 	}

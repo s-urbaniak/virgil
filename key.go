@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"io/ioutil"
 	"os"
 
@@ -93,17 +91,9 @@ func keyEncryptCmd(cfg *config) *cobra.Command {
 				pubkeys[i] = pubkey
 			}
 
-			data, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error loading data"))
+			if err := virgil.Crypto().EncryptStream(os.Stdin, os.Stdout, pubkeys...); err != nil {
+				a.exit(errors.Wrap(err, "error encrypting data"))
 			}
-
-			enc, err := virgil.Crypto().Encrypt(data, pubkeys...)
-			if err != nil {
-				a.exit(errors.Wrap(err, "error loading data"))
-			}
-
-			io.Copy(os.Stdout, bytes.NewBuffer(enc))
 		},
 	}
 
